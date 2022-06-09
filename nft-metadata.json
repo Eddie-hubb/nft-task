@@ -1,0 +1,16 @@
+{
+    "attributes": [
+      {
+        "trait_type": "Breed",
+        "value": "queen"
+      },
+      {
+        "trait_type": "Eye color",
+        "value": "black"
+      }
+    ],
+    "description": "The world's most adorable and sensitive girl.",
+    "image": "ipfs://QmRT2smmT9nE1js7M95UCxFAgjw6QHet6QPbNPx6jqx5XG",
+    "name": "Butterfly"
+  }
+  
