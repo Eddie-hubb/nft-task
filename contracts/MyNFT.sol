@@ -8,13 +8,19 @@
     import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
     import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
+
+    // define and save the property of each nft
     contract NFTProperty is Ownable {
-        address private NFTOwner;
-        uint256 private class_id;
-        bool private transferable = true;
-        bool private mintable = true;
-        bool private burnable = true;
-        bool private frozen = false;
+        address private NFTOwner; // the owner of the nft
+        uint256 private class_id; // the id of the class
+        bool private transferable = true; // if true nft can be transferred otherwise no
+        bool private mintable = true; // if true nft can be mintted otherwise no
+        bool private burnable = true; // if true nft can be burned otherwise no
+        bool private frozen = false; // if true the property below can be changed otherwise no
+
+        function setClassId(uint256 _classId) public onlyOwner{
+            class_id = _classId;
+        }
 
 
         function setNFTOwner(address _nftOwner) public {
@@ -25,11 +31,6 @@
             return NFTOwner;
         }
 
-        
-
-        // function transferNFTOwnership(address _newNFTOwner) public {
-
-        // }
 
         function getTransferable() public view returns (bool) {
             return transferable;
@@ -77,18 +78,16 @@
     contract MyNFT is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable {
         using Counters for Counters.Counter;
         NFTProperty private nftProperty = new NFTProperty();
-        uint256 private property_id;
-        Counters.Counter private _tokenIds;
+        uint256 private class_id; // the id of the nft class
+        Counters.Counter private _tokenIds; // start from 1 increment every time when nft mint
 
         //具有转账功能的智能合约的 constructor 必须显式的指定为 payable。
-        //
+        //initialize the name of the nft and the owner of the nft
         constructor() ERC721("MyNFT", "NFT") payable {
             nftProperty.setNFTOwner(msg.sender);
         }
-        //address recipient specifies the address that will receive your freshly minted NFT
-        //string memory tokenURI is a string that should resolve to a JSON document that describes the NFT's metadata.
-        //mintNFT calls some methods from the inherited ERC-721 library, and ultimately returns a number that represents the ID of the freshly minted NFT
 
+        //mintNFT calls some methods from the inherited ERC-721 library, and ultimately returns a number that represents the ID of the freshly minted NFT
         function mintNFT()
             public 
             returns (uint256)
@@ -100,59 +99,64 @@
             return newItemId;
         }
 
-    
-        function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
+        // set the id of the class
+        function setClassId(uint256 _classId) public {
+            class_id = _classId;
+            nftProperty.setClassId(_classId);
+        }
+
+        // if the caller is approved or owner, it can set the specific nft with URI (metadata)
+        function setTokenURI(uint256 _tokenId, string memory _tokenURI) public {
         require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
+            _isApprovedOrOwner(_msgSender(), _tokenId),
             "ERC721: transfer caller is not owner nor approved"
         );
-            _setTokenURI(tokenId, _tokenURI);
+            _setTokenURI(_tokenId, _tokenURI);
         }   
 
-        function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+        //token with pausable token transfers, minting and burning, to see Useful for scenarios such as preventing trades until the end of an evaluation period
+        function _beforeTokenTransfer(address _from, address _to, uint256 _tokenId)
             internal
             override(ERC721, ERC721Enumerable)
         {
-            super._beforeTokenTransfer(from, to, tokenId);
+            super._beforeTokenTransfer(_from, _to, _tokenId);
         }
 
-
+        //transfer the ownership of the nft
         function transferOwnership(address _newOwner) public onlyOwner override (Ownable){
             require(msg.sender == nftProperty.getNFTOwner(), "the caller have no right to transfer ownership"); 
             nftProperty.transferOwnership(_newOwner);
             nftProperty.setNFTOwner(_newOwner);
         }
 
-
-        function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-            super._burn(tokenId);
-        }
-
-        function burnNFT(uint256 tokenId) public {
+        //burn the nft (sending it into address 0)
+        function _burn(uint256 _tokenId) internal override(ERC721, ERC721URIStorage) {
             require(nftProperty.getBurnable() == true, "The nft is not burnable");
-            _burn(tokenId);
+            super._burn(_tokenId);
         }
 
-        function tokenURI(uint256 tokenId)
+        // get the tokenURI of the specific tokenid
+        function tokenURI(uint256 _tokenId)
             public
             view
             override(ERC721, ERC721URIStorage)
             returns (string memory)
         {
-            return super.tokenURI(tokenId);
+            return super.tokenURI(_tokenId);
         }
 
-        function supportsInterface(bytes4 interfaceId)
+        // a standardized way to retrieve royalty payment
+        function supportsInterface(bytes4 _interfaceId)
             public
             view
             override(ERC721, ERC721Enumerable)
             returns (bool)
         {
-            return super.supportsInterface(interfaceId);
+            return super.supportsInterface(_interfaceId);
         }
 
 
-        // Added isTransferable only
+        // transfer nft from one to other
         function transferFrom(
             address from,
             address to,
@@ -169,7 +173,7 @@
             _transfer(from, to, tokenId);
         }
 
-        // Added isTransferable only
+        // similiar to transferFrom(), but Safetransferfrom() function is just used to check if the address receiving the token is erc721 receiver or not
         function safeTransferFrom(
             address from,
             address to,
@@ -188,6 +192,7 @@
             _safeTransfer(from, to, tokenId, _data);
         }
 
+        // if the condition is satisfied, the function will run, otherwise it will throw exception (modifier)
         modifier isTransferable() {
             require(
                 nftProperty.getTransferable() == true, 
@@ -196,9 +201,8 @@
             _;
         }
 
-        // if the condition is satisfied, the function will run, otherwise it will throw exception (modifier)
 
-
+        //functions to get and set the properties of the nft
         function getTransferable() public view returns (bool) {
             return nftProperty.getTransferable();
         }
