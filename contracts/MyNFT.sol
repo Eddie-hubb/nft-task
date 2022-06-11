@@ -21,6 +21,12 @@
             NFTOwner = _nftOwner;
         }
 
+        function getNFTOwner() public view returns (address){
+            return NFTOwner;
+        }
+
+        
+
         // function transferNFTOwnership(address _newNFTOwner) public {
 
         // }
@@ -100,7 +106,7 @@
             _isApprovedOrOwner(_msgSender(), tokenId),
             "ERC721: transfer caller is not owner nor approved"
         );
-        _setTokenURI(tokenId, _tokenURI);
+            _setTokenURI(tokenId, _tokenURI);
         }   
 
         function _beforeTokenTransfer(address from, address to, uint256 tokenId)
@@ -109,6 +115,14 @@
         {
             super._beforeTokenTransfer(from, to, tokenId);
         }
+
+
+        function transferOwnership(address _newOwner) public onlyOwner override (Ownable){
+            require(msg.sender == nftProperty.getNFTOwner(), "the caller have no right to transfer ownership"); 
+            nftProperty.transferOwnership(_newOwner);
+            nftProperty.setNFTOwner(_newOwner);
+        }
+
 
         function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
             super._burn(tokenId);
